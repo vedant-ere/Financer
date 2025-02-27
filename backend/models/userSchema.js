@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import bcrypt from "bcryptjs"
 
 const userSchema = new mongoose.Schema({
     username: {
@@ -30,4 +31,23 @@ const userSchema = new mongoose.Schema({
     }
 })
 
-module.exports = mongoose.model('User', userSchema);
+
+// Hash password before saving 
+userSchema.pre("save", async function(next){
+    if (!this.isModified('password')) return next();
+    try{
+        const salt = await bcrypt.genSalt(10);
+        this.password = await bcrypt.hash(this.password, salt);
+        next();
+
+    } catch(err){
+        next(err)
+    }
+})
+
+// method to compare password
+
+userSchema.methods.comparePassword = async (candidatePassword) =>{
+    return await bcrypt.compare(this.password, candidatePassword)
+}
+export const User = mongoose.model("User", userSchema);
